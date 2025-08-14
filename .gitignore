@@ -1,0 +1,26 @@
+# OS / IDE files
+.DS_Store
+.ipynb_checkpoints/
+__pycache__/
+
+# Virtual environments
+.env
+.venv/
+venv/
+
+# Data and model files (keep folder structure only)
+data/*
+!data/.gitkeep
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+
+models/*
+!models/.gitkeep
+
+reports/figures/*
+!reports/figures/.gitkeep
+
+# Large binary formats
+*.parquet
+*.joblib
+*.pkl
