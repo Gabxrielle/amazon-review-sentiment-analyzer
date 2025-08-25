@@ -1,0 +1,24 @@
+# --- Core HF stack
+datasets>=2.18,<3
+transformers==4.44.2
+accelerate==0.33.0
+evaluate==0.4.2
+huggingface_hub==0.23.2
+safetensors>=0.4.2
+tokenizers>=0.15,<0.20
+
+# --- ML / Data
+torch>=2.2
+scikit-learn>=1.3
+pandas>=2.0
+numpy>=1.26
+scipy>=1.10
+joblib>=1.3
+pyarrow>=15
+protobuf>=4,<5
+sentencepiece>=0.1.99
+
+# --- Viz / Apps / Notebooks
+matplotlib>=3.7
+ipywidgets>=8
+streamlit>=1.33
