@@ -1,26 +1,49 @@
-# OS / IDE files
+# ── OS / IDE ────────────────────────────────────────────────────────────────────
 .DS_Store
-.ipynb_checkpoints/
-__pycache__/
+.vscode/
+.idea/
 
-# Virtual environments
-.env
+# ── Python / Build ──────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+dist/
+build/
+
+# ── Virtual envs & dotenv ──────────────────────────────────────────────────────
 .venv/
 venv/
+env/
+.env
 
-# Data and model files (keep folder structure only)
-data/*
+# ── Jupyter ────────────────────────────────────────────────────────────────────
+.ipynb_checkpoints/
+
+# ── Local datasets & caches ────────────────────────────────────────────────────
+.datasets/
+.cache/
+**/cache/
+huggingface/
+.huggingface/
+anaconda_projects/
+
+# ── Re-creatable artifacts (keep structure with .gitkeep) ──────────────────────
+data/
 !data/.gitkeep
-!data/raw/.gitkeep
-!data/processed/.gitkeep
-
-models/*
+models/
 !models/.gitkeep
 
-reports/figures/*
-!reports/figures/.gitkeep
-
-# Large binary formats
+# ── Generic large binaries ─────────────────────────────────────────────────────
 *.parquet
 *.joblib
 *.pkl
+*.bin
+*.pt
+
+# ── Logs / temp ────────────────────────────────────────────────────────────────
+*.log
+*.tmp
+*.bak
