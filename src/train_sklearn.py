@@ -5,6 +5,7 @@ Baseline: TF-IDF + Logistic Regression
 - Trains on data/train.parquet, validates on data/val.parquet, tests on data/test.parquet
 - Saves model to models/baseline/tfidf_lr.joblib
 - Writes metrics to metrics/baseline_val.json and metrics/baseline_test.json
+- Writes run metadata to metrics/run.json (seed, params, dataset source, git SHA)
 """
 
 from __future__ import annotations
@@ -12,6 +13,11 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import random
+import subprocess
+import time
+from datetime import datetime
+from typing import Dict, Any
 
 import joblib
 import numpy as np
@@ -21,7 +27,12 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import classification_report, confusion_matrix
 from sklearn.pipeline import Pipeline
 
-LABELS = ["neg", "neu", "pos"]  
+LABELS = ["neg", "neu", "pos"]  # fixed order
+
+# ---- reproducibility
+SEED = int(os.getenv("SEED", "42"))
+random.seed(SEED)
+np.random.seed(SEED)
 
 
 def _ensure_dir(p: str) -> None:
@@ -45,18 +56,20 @@ def clf_pipeline(
         min_df=min_df,
         max_features=max_features,
     )
-    
-    clf = LogisticRegression(solver="liblinear", C=c, max_iter=200, multi_class="ovr")
+    clf = LogisticRegression(
+        solver="liblinear",
+        C=c,
+        max_iter=200,
+        multi_class="ovr",
+        random_state=SEED,          # ensure full determinism
+        # class_weight="balanced",  # optional: enable if neutral class is very underrepresented
+    )
     return Pipeline([("tfidf", vec), ("lr", clf)])
 
 
-def evaluate(clf: Pipeline, X: pd.Series, y: pd.Series, out_json: str) -> dict:
-    """
-    Avalia usando rótulos string (neg/neu/pos).
-    """
+def evaluate(clf: Pipeline, X: pd.Series, y: pd.Series, out_json: str) -> Dict[str, Any]:
     pred = clf.predict(X)
     labels_order = LABELS
-
     rep = classification_report(
         y,
         pred,
@@ -67,11 +80,21 @@ def evaluate(clf: Pipeline, X: pd.Series, y: pd.Series, out_json: str) -> dict:
         zero_division=0,
     )
     cm = confusion_matrix(y, pred, labels=labels_order).tolist()
-
     res = {"report": rep, "confusion_matrix": cm}
     with open(out_json, "w") as f:
         json.dump(res, f, indent=2)
     return res
+
+
+def _git_sha() -> str:
+    try:
+        return (
+            subprocess.check_output(["git", "rev-parse", "HEAD"], stderr=subprocess.DEVNULL)
+            .decode()
+            .strip()
+        )
+    except Exception:
+        return "unknown"
 
 
 def main():
@@ -100,7 +123,10 @@ def main():
     )
 
     print(f"Training TF-IDF+LR on {len(train):,} docs …")
+    t0 = time.time()
     pipe.fit(train["review_body"], train["label"])
+    train_secs = time.time() - t0
+    print(f"Training done in {train_secs:.1f}s")
 
     # VAL
     val_json = os.path.join(args.metricsdir, "baseline_val.json")
@@ -114,9 +140,44 @@ def main():
     print("=== TEST ===")
     print(json.dumps(test_res["report"], indent=2))
 
+    # Save model
     model_path = os.path.join(args.modeldir, "tfidf_lr.joblib")
     joblib.dump(pipe, model_path)
-    print(f"Saved model to {model_path}")
+    model_size = os.path.getsize(model_path) if os.path.exists(model_path) else None
+    print(f"Saved model to {model_path} ({model_size or 0} bytes)")
+
+    # Run metadata
+    run_meta = {
+        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "git_sha": _git_sha(),
+        "seed": SEED,
+        "params": {
+            "max_features": args.max_features,
+            "ngram_max": args.ngram_max,
+            "min_df": args.min_df,
+            "C": args.C,
+            "solver": "liblinear",
+        },
+        "data": {
+            "n_train": int(len(train)),
+            "n_val": int(len(val)),
+            "n_test": int(len(test)),
+            "labels": LABELS,
+            "source": os.getenv("DATA_SRC", "") or f"yelp:{os.getenv('YELP_ROWS', '100000')}",
+        },
+        "training": {
+            "seconds": round(train_secs, 3),
+        },
+        "artifacts": {
+            "model": model_path,
+            "model_size_bytes": model_size,
+            "metrics_val": val_json,
+            "metrics_test": test_json,
+        },
+    }
+    with open(os.path.join(args.metricsdir, "run.json"), "w") as f:
+        json.dump(run_meta, f, indent=2)
+    print("Saved run metadata to metrics/run.json")
 
 
 if __name__ == "__main__":

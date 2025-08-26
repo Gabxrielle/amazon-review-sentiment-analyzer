@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11"]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: "pip"
+
+      - name: Install dependencies (M1)
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements-m1.txt
+
+      - name: Smoke run (fast)
+        env:
+          YELP_ROWS: "200"
+        run: |
+          echo "Running M1 smoke: prepare -> train -> report (YELP_ROWS=200)"
+          python src/data.py
+          python src/train_sklearn.py
+          python src/report_baseline.py
+
+      - name: Run tests (if present)
+        run: |
+          pip install pytest >/dev/null 2>&1 || true
+          if [ -d tests ]; then
+            echo "Running pytest..."
+            pytest -q
+          else
+            echo "No tests yet. Skipping pytest."
+          fi
+
+      - name: Upload reports artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reports-${{ matrix.python-version }}
+          path: |
+            reports/**
+            metrics/**
+            models/baseline/tfidf_lr.joblib
+          if-no-files-found: ignore

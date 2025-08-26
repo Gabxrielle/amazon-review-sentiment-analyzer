@@ -1,5 +1,9 @@
 # 🛒 Amazon Review Sentiment Analyzer
 
+![Build](https://github.com/Gabxrielle/amazon-review-sentiment-analyzer/actions/workflows/ci.yml/badge.svg)
+![Python](https://img.shields.io/badge/python-3.10%7C3.11-blue)
+![License](https://img.shields.io/badge/license-MIT-green)
+
 Baseline sentiment analysis on Amazon product reviews using **TF-IDF + Logistic Regression**.  
 The goal is to build a clear, modular, and reproducible NLP pipeline for text classification (negative, neutral, positive).
 
@@ -37,7 +41,7 @@ amazon-review-sentiment-analyzer/
 │   ├── train\_hf.py        # (M2) Hugging Face Transformers baseline
 │   └── eval\_hf.py
 ├── README.md
-└── requirements.txt
+└── requirements-m1.txt
 
 ````
 
@@ -102,14 +106,29 @@ reports/misclassified_test.csv
 
 ---
 
+## ⚡ Makefile quickstart
+
+```bash
+make prepare   # generate data splits
+make train     # train TF-IDF + LR and save metrics/model
+make report    # generate confusion matrix, reports, top n-grams
+make infer     # quick prediction demo
+```
+
+---
+
 ## 📊 Baseline Results (M1)
 
 Example run with a small Yelp subset:
 
+| Split | Accuracy | Notes                                |
+| ----- | -------- | ------------------------------------ |
+| Val   | 0.70     | Neutral class missing (small sample) |
+| Test  | 0.80     | Unstable with few examples           |
+
 **Validation**
 
 ```
-accuracy: 0.70
 neg:  precision=0.75  recall=1.00  f1=0.83
 neu:  no examples in this sample
 pos:  precision=0.67  recall=0.80  f1=0.73
@@ -118,7 +137,6 @@ pos:  precision=0.67  recall=0.80  f1=0.73
 **Test**
 
 ```
-accuracy: 0.80
 neg:  precision=0.71  recall=1.00  f1=0.83
 neu:  no examples in this sample
 pos:  precision=1.00  recall=0.75  f1=0.86
@@ -147,6 +165,17 @@ Additional reports:
 * **M3:** Compare baseline TF-IDF+LR vs Transformers.
 * **M4:** Serve the model via API (FastAPI/Flask).
 * **M5:** Build a dashboard for metrics and visualizations.
+* **M6:** Add automated tests + CI with GitHub Actions.
+* **M7:** Containerize with Docker for reproducibility.
+
+---
+
+## ⚠️ Limitations
+
+* Neutral class is unstable with small subsets.
+* Yelp reviews differ from Amazon domain (domain shift).
+* Sarcasm and figurative language are not well captured by linear models.
+* Baseline metrics can vary significantly depending on dataset size.
 
 ---
 
@@ -160,7 +189,7 @@ Additional reports:
 
 ## 👩‍💻 Author
 
-Developed by **Gabrielle Rodrigues**  
+Developed by **Gabrielle Rodrigues**
 [LinkedIn](https://www.linkedin.com/in/grdrgs/) | [GitHub](https://github.com/Gabxrielle)
 
 ```
